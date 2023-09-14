@@ -14,6 +14,11 @@ from dash import Output, Input
 from networkx import DiGraph
 
 
+
+# Load extra layouts
+cyto.load_extra_layouts()
+
+
 @dataclasses.dataclass(frozen=True)
 class Node:
     file: str
@@ -261,7 +266,12 @@ app.layout = html.Div([
     html.Div([
         dcc.Store(id='code-store'),
         cyto.Cytoscape(id='callgraph', elements=[],
-                       layout={'name': 'breadthfirst'},
+                       layout={
+                           'name': 'dagre',
+                           'spacingFactor': 1.25
+                           # 'directed': "true",
+                           # 'grid': "true"
+                       },
                        stylesheet=[
                            {
                                'selector': 'node',
@@ -286,8 +296,8 @@ app.layout = html.Div([
                            {
                                'selector': 'node[selected = "true"]',
                                'style': {
-                                   'border-color': 'blue',
-                                   'border-width': 1
+                                   'border-color': 'rgb(241,231,64)',
+                                   'border-width': 2
                                }
                            },
                            # {
@@ -318,9 +328,9 @@ app.layout = html.Div([
                                'style': {
                                    # The default curve style does not work with certain arrows
                                    'curve-style': 'bezier',
-                                   'target-arrow-color': 'rgb(59, 127, 180)',
+                                   'target-arrow-color': 'rgb(59, 127, 180)a',
                                    'target-arrow-shape': 'triangle',
-                                   'line-color': 'rgb(59, 127, 180)'
+                                   'line-color': 'rgb(59, 127, 180)a'
                                }
                            },
 
@@ -424,6 +434,9 @@ def render_network(node_data, click_data, search_value, prev_elements):
     # clean up
     for n in graph.nodes:
         graph.nodes[n]['data']['chain'] = 'false'
+        graph.nodes[n]['data']['selected'] = 'false'
+    if node_data and graph.nodes[node_data['id']]:
+        graph.nodes[node_data['id']]['data']['selected'] = "true"
 
     # highlight
     if node_data and 'id' in node_data:

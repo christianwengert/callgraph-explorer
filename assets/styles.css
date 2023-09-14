@@ -42,7 +42,7 @@ body {
 body { overflow: hidden; /* Hide scrollbars */ }
 #code {
     /*margin-top: 32px;*/
-    width: 50%;
+    width: 40vw;
     height: calc(100vh - 2 * 48px);
     overflow: scroll;
     padding: 0;
@@ -54,7 +54,7 @@ body { overflow: hidden; /* Hide scrollbars */ }
 }
 
 #callgraph {
-    width: 50vw !important;
+    width: 60vw !important;
     height: calc(100vh - 3 * 48px) !important;
 
     background-color: var(--main-bg-color-2);
