@@ -9,7 +9,6 @@ import clang.cindex
 from clang.cindex import CursorKind, Index, Config
 from collections import defaultdict
 import json
-import yaml
 from dash import Output, Input
 from networkx import DiGraph
 
@@ -49,6 +48,7 @@ Config.set_library_path(
 CALLGRAPH = defaultdict(list)
 FULLNAMES = defaultdict(set)
 NODELIST = defaultdict()
+# FUNCTIONS = dict()
 
 global graph
 # graph = DiGraph()
@@ -104,14 +104,12 @@ def is_excluded(node, xfiles, xprefs):
 
     return False
 
-
 def show_info(node, xfiles, xprefs, cur_fun=None):
     if node.kind == CursorKind.FUNCTION_TEMPLATE:
         if not is_excluded(node, xfiles, xprefs):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
-            NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
 
     if node.kind == CursorKind.CXX_METHOD or \
             node.kind == CursorKind.FUNCTION_DECL:
@@ -119,7 +117,6 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
-            NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
 
     if node.kind == CursorKind.CALL_EXPR:
         if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
@@ -127,6 +124,30 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
 
     for c in node.get_children():
         show_info(c, xfiles, xprefs, cur_fun)
+# def show_info(node, xfiles, xprefs, cur_fun=None):
+#     if node.kind == CursorKind.FUNCTION_TEMPLATE:
+#         if not is_excluded(node, xfiles, xprefs):
+#             cur_fun = node
+#             # FULLNAMES[fully_qualified(cur_fun)].add(
+#             #     fully_qualified_pretty(cur_fun))
+#             NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
+#
+#     if node.kind == CursorKind.CXX_METHOD or \
+#             node.kind == CursorKind.FUNCTION_DECL:
+#         if not is_excluded(node, xfiles, xprefs):
+#             cur_fun = node
+#             # FULLNAMES[fully_qualified(cur_fun)].add(
+#             #     fully_qualified_pretty(cur_fun))
+#             NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
+#             # FUNCTIONS[fully_qualified_pretty(cur_fun)] = cur_fun
+#
+#     if node.kind == CursorKind.CALL_EXPR:
+#         if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
+#             print(fully_qualified_pretty(cur_fun), node.referenced.spelling)
+#             CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
+#
+#     for c in node.get_children():
+#         show_info(c, xfiles, xprefs, cur_fun)
 
 
 def pretty_print(n):
@@ -139,6 +160,24 @@ def pretty_print(n):
 
 
 def print_calls(fun_name, so_far, graph, depth=0):
+    if depth >= 15:
+        print('...<too deep>...')
+        return
+
+    if fully_qualified_pretty(fun_name) in CALLGRAPH:
+        for f in CALLGRAPH[fun_name]:
+            print('  ' * (depth + 1) + pretty_print(f))
+            if f in so_far:
+                continue
+            so_far.append(f)
+            if fully_qualified_pretty(f) in CALLGRAPH:
+                print_calls(fully_qualified_pretty(f), so_far, graph, depth + 1)
+            else:
+                print_calls(fully_qualified(f), so_far, graph, depth + 1)
+    if fun_name is None:
+        pass
+
+def print_calls_bak(fun_name, so_far, graph, depth=0):
     if depth >= 15:
         print('...<too deep>...')
         return
@@ -196,69 +235,11 @@ def read_compile_commands(filename):
         return [{'command': '', 'file': filename}]
 
 
-def read_args(args):
-    db = None
-    clang_args = []
-    excluded_prefixes = []
-    excluded_paths = []
-    config_filename = None
-    lookup = None
-    i = 0
-    while i < len(args):
-        if args[i] == '-x':
-            i += 1
-            excluded_prefixes += args[i].split(',')
-        elif args[i] == '-p':
-            i += 1
-            excluded_paths += args[i].split(',')
-        elif args[i] == '--cfg':
-            i += 1
-            config_filename = args[i]
-        elif args[i] == '--lookup':
-            i += 1
-            lookup = args[i]
-        elif args[i][0] == '-':
-            clang_args.append(args[i])
-        else:
-            db = args[i]
-        i += 1
-
-    if len(excluded_paths) == 0:
-        excluded_paths.append('/usr')
-
-    return {
-        'db': db,
-        'clang_args': clang_args,
-        'excluded_prefixes': excluded_prefixes,
-        'excluded_paths': excluded_paths,
-        'config_filename': config_filename,
-        'lookup': lookup,
-        'ask': (lookup is None)
-    }
-
-
-def load_config_file(cfg):
-    if cfg['config_filename']:
-        with open(cfg['config_filename'], 'r') as yamlfile:
-            data = yaml.load(yamlfile, Loader=yaml.FullLoader)
-            cfg['clang_args'] += data['clang_args']
-            cfg['excluded_prefixes'] += data['excluded_prefixes']
-            cfg['excluded_paths'] += data['excluded_paths']
-
-
-def keep_arg(x) -> bool:
-    keep_this = x.startswith('-I') or x.startswith('-std=') or x.startswith('-D')
-    return keep_this
-
-
 def analyze_source_files(cfg):
     print('reading source files...')
     for cmd in read_compile_commands(cfg['db']):
         index = Index.create()
-        c = [
-                x for x in cmd['command'].split()
-                if keep_arg(x)
-            ] + cfg['clang_args']
+        c = cfg['clang_args']
         tu = index.parse(cmd['file'], c)
         print(cmd['file'])
         if not tu:
@@ -268,8 +249,9 @@ def analyze_source_files(cfg):
             if d.severity == d.Error or d.severity == d.Fatal:
                 print(' '.join(c))
                 pprint(('diags', list(map(get_diag_info, tu.diagnostics))))
-                # return
+                return
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
+
 
 
 external_scripts = [
@@ -306,17 +288,13 @@ app.index_string = '''
 '''
 
 
-def main(filename) -> DiGraph:
+def build_ast_graph(filename) -> DiGraph:
     cfg = {'db': filename,
            'clang_args': [],
-           'excluded_prefixes': [],
-           'excluded_paths': ['/usr'],
+           'excluded_prefixes': ['std::', '__libcpp', 'operator', '__builtin', '__c11_atomic'],
+           'excluded_paths': ['/usr', '/Applications'],
            'config_filename': None,
-           'lookup': None,
-           'ask': True}
-
-    load_config_file(cfg)
-    cfg['excluded_prefixes'] = ['std::', '__libcpp', 'operator', '__builtin', '__c11_atomic']  # ,
+           }
 
     analyze_source_files(cfg)
     graph = DiGraph()
@@ -454,7 +432,7 @@ def show_code(node_data):
 def render_network(node_data, prev_elements):
     global graph
     if node_data is None and not prev_elements:
-        graph = main('/Users/christianwengert/src/minimal-c-test/test.cpp')
+        graph = build_ast_graph('/Users/christianwengert/src/minimal-c-test/test.cpp')
 
     # clean up
     for n in graph.nodes:
