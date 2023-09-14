@@ -261,7 +261,7 @@ def build_ast_graph(filename) -> DiGraph:
 app.layout = html.Div([
     html.Div([
         dcc.Input(id='filter', type='text', placeholder='Search', debounce=True),
-        html.Button(id='filter-button', children=["Filter"])
+        # html.Button(id='filter-button', children=["Filter"])
     ], id='toolbar'),
     html.Div([
         dcc.Store(id='code-store'),
@@ -396,11 +396,11 @@ def show_code(node_data):
     Output('callgraph', 'elements'),
     # Input('filter', 'value'),
     Input('callgraph', 'tapNodeData'),
-    Input('filter-button', 'n_clicks'),
+    Input('filter', 'n_submit'),
     State('filter', 'value'),
     State('callgraph', 'elements')
 )
-def render_network(node_data, click_data, search_value, prev_elements):
+def render_network(node_data, n_sub, search_value, prev_elements):
 
     global graph, old_graph
     if node_data is None and not prev_elements:
@@ -427,7 +427,10 @@ def render_network(node_data, click_data, search_value, prev_elements):
 
             # Include the target nodes themselves
             reachable_nodes.update(target_nodes)
-            filtered_graph = graph.subgraph(reachable_nodes).copy()
+            if reachable_nodes:
+                filtered_graph = graph.subgraph(reachable_nodes).copy()
+            else:
+                filtered_graph = nx.DiGraph()  # empty
             old_graph = graph.copy()
             graph = filtered_graph
 
