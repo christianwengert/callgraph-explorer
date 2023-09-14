@@ -2,6 +2,7 @@
 import dataclasses
 from pprint import pprint
 import dash
+import networkx as nx
 from dash import dcc, State, no_update, clientside_callback, ClientsideFunction
 from dash import html
 import dash_cytoscape as cyto
@@ -131,6 +132,7 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
     for c in node.get_children():
         show_info(c, xfiles, xprefs, cur_fun)
 
+
 def pretty_print(n):
     v = ''
     if n.is_virtual_method():
@@ -200,7 +202,6 @@ def analyze_source_files(cfg):
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
 
 
-
 external_scripts = [
     {'src': 'static/highlight.min.js', 'type': 'module'},
     {'src': 'static/callbacks.js', 'type': 'module'},
@@ -217,6 +218,7 @@ app.index_string = '''
         {%css%}
     </head>
     <body>
+        <div id="header">Header</div>
         <div id="container">
             <pre id="code"></pre>
             <div>
@@ -229,7 +231,7 @@ app.index_string = '''
             {%scripts%}
             {%renderer%}
         </footer>
-        <div>My Custom footer</div>
+        <div id="footer">My Custom footer</div>
     </body>
 </html>
 '''
@@ -253,8 +255,9 @@ def build_ast_graph(filename) -> DiGraph:
 
 app.layout = html.Div([
     html.Div([
-        dcc.Input(id='filter', type='text', placeholder='Search')
-    ]),
+        dcc.Input(id='filter', type='text', placeholder='Search', debounce=True),
+        html.Button(id='filter-button', children=["Filter"])
+    ], id='toolbar'),
     html.Div([
         dcc.Store(id='code-store'),
         cyto.Cytoscape(id='callgraph', elements=[],
@@ -312,11 +315,11 @@ app.layout = html.Div([
                                }
                            },
 
-                       ]
+                       ],
+                       # style={'height': '80vh'},
                        )
-    ], id='dash')
-
-])
+    ])
+], id='dash')
 
 
 def get_parents_recursive(graph, node, parents=None):
@@ -374,12 +377,40 @@ def show_code(node_data):
     Output('callgraph', 'elements'),
     # Input('filter', 'value'),
     Input('callgraph', 'tapNodeData'),
+    Input('filter-button', 'n_clicks'),
+    State('filter', 'value'),
     State('callgraph', 'elements')
 )
-def render_network(node_data, prev_elements):
-    global graph
+def render_network(node_data, click_data, search_value, prev_elements):
+
+    global graph, old_graph
     if node_data is None and not prev_elements:
         graph = build_ast_graph('/Users/christianwengert/src/minimal-c-test/test.cpp')
+        old_graph = graph.copy()
+    else:
+        graph = old_graph
+
+    context = dash.callback_context
+    if len(context.triggered) and context.triggered[0]:
+        if search_value:  # do nothing on empty
+
+            target_nodes = set()
+            for n in graph.nodes:
+                if search_value.lower() in n.lower():
+                    target_nodes.add(n)
+
+            reachable_nodes = set()
+
+            # Perform a breadth-first search from each target node
+            for node in target_nodes:
+                reachable_nodes.update(nx.descendants(graph, node))
+                reachable_nodes.update(nx.ancestors(graph, node))
+
+            # Include the target nodes themselves
+            reachable_nodes.update(target_nodes)
+            filtered_graph = graph.subgraph(reachable_nodes).copy()
+            old_graph = graph.copy()
+            graph = filtered_graph
 
     # clean up
     for n in graph.nodes:
@@ -403,12 +434,6 @@ def render_network(node_data, prev_elements):
                          )
                ) for a, b in graph.edges],
     ]
-    elements2 = [
-            {'data': {'id': 'one::two()', 'label': 'one::two()'}, 'position': {'x': 75, 'y': 75}},
-            {'data': {'id': 'two', 'label': 'Node 2'}, 'position': {'x': 200, 'y': 200}},
-            {'data': {'source': 'one::two()', 'target': 'two'}}
-        ]
-
     return elements
 
 

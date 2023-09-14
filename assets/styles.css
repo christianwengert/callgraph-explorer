@@ -1,14 +1,50 @@
 #container {
     display: flex;
+
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+
+#header {
+    height: 48px;
+
+}
+#footer {
+    height: 48px;
 }
 #code {
+    /*margin-top: 32px;*/
     width: 49%;
     border: 1px solid lightgray;
+    height: calc(100vh - 2 * 48px );
+    overflow: scroll;
+    padding: 0;
+    margin: 0;
 }
 
 #callgraph {
+    width: 50vw !important;
+    height: calc(100vh - 3 * 48px) !important;
+    border: 1px solid green;
+    background-color: #f2f2f2;
+}
+#toolbar {
+    height: 48px;
+    padding: 8px;
+    display: flex;
+    /*justify-content: center;*/
+}
+#dash {
+    /*margin-top: 10px;*/
     width: auto;
-    height: 500px;
+    height: calc(100vh - 2 * 48px + 2px);
+    background-color: lightgray;
+    display: flex;
+    flex-direction: column;
 }
 
 /*pre span:before {*/
