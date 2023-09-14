@@ -19,14 +19,16 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             let lines = code.value.split('\n');
             let output = ''
             for (let i = 0; i < lines.length; i++) {
+
+                let selected = "";
                 if (i >= start && i <= end) {
-                    output += "<span class='h-line'>"
+                    selected = "selected";
                 }
-                output += "<span class='h-linenum'>" + i + "</span>"
+                output += `<span class='h-linenum ${selected}'>` + i + "</span>"
                 output += lines[i]
-                if (i >= start && i <= end) {
+                /*if (i >= start && i <= end) {
                     output += "</span>"
-                }
+                }*/
                 output += '\n'
             }
             console.log(start, end)

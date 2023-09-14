@@ -272,7 +272,14 @@ app.layout = html.Div([
                                    'text-valign': 'center',
                                    'width': 'label',
                                    'height': 'label',
-                                   'padding': '10px'
+                                   'padding': '10px',
+                                   'background-color': 'rgb(86, 91, 94)',
+                                   'border-width': 1,
+                                   'border-color': 'rgb(184, 194, 200)',
+                                   'color': 'rgb(184, 194, 200)',
+                                   'font-family': 'monospace'
+
+
                                },
 
                            },
@@ -280,6 +287,7 @@ app.layout = html.Div([
                                'selector': 'node[selected = "true"]',
                                'style': {
                                    'border-color': 'blue',
+                                   'border-width': 1
                                }
                            },
                            # {
@@ -291,17 +299,18 @@ app.layout = html.Div([
                            {
                                'selector': 'node[chain = "true"]',
                                'style': {
-                                   'background-color': 'pink',
+                                   'background-color': 'rgb(59, 127, 180)',
                                }
                            },
                            {
                                'selector': 'edge',
                                'style': {
                                    # The default curve style does not work with certain arrows
-                                   'curve-style': 'bezier',
-                                   'target-arrow-color': 'red',
+                                   'curve-style': 'taxi',  # 'bezier',
+                                   'target-arrow-color': 'rgb(184, 194, 200)',
                                    'target-arrow-shape': 'triangle',
-                                   'line-color': 'red'
+                                   'line-color': 'rgb(184, 194, 200)',
+                                   'width': 1
                                }
                            },
                            {
@@ -309,9 +318,9 @@ app.layout = html.Div([
                                'style': {
                                    # The default curve style does not work with certain arrows
                                    'curve-style': 'bezier',
-                                   'target-arrow-color': 'yellow',
+                                   'target-arrow-color': 'rgb(59, 127, 180)',
                                    'target-arrow-shape': 'triangle',
-                                   'line-color': 'yellow'
+                                   'line-color': 'rgb(59, 127, 180)'
                                }
                            },
 

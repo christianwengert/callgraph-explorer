@@ -1,3 +1,16 @@
+
+:root {
+    --main-bg-color-1: rgb(48, 53, 56);
+    --main-bg-color-2: rgb(58, 65, 69);
+    --main-bg-color-3: rgb(74, 78, 80);
+    --main-bg-color-4: rgb(86, 91, 94);
+    --main-text-color-1: rgb(184, 194, 200);
+    --main-text-color-2: rgb(148, 159, 164);
+    --main-highlight-color: rgb(59, 127, 180);
+    --toolbar-height: 48px;
+}
+
+
 #container {
     display: flex;
 
@@ -8,63 +21,74 @@ html, body {
     padding: 0;
 }
 
+body {
+    /*background-color: var(--main-bg-color-1);*/
+    font-family: sans-serif;
+    /*color: var(--main-text-color-1);*/
+}
+
 
 #header {
-    height: 48px;
+    height: var(--toolbar-height);
+    color: var(--main-text-color-1);
+    background-color: var(--main-bg-color-1);
 
 }
 #footer {
-    height: 48px;
+    height: var(--toolbar-height);
+    color: var(--main-text-color-1);
+    background-color: var(--main-bg-color-1);
 }
+body { overflow: hidden; /* Hide scrollbars */ }
 #code {
     /*margin-top: 32px;*/
-    width: 49%;
-    border: 1px solid lightgray;
-    height: calc(100vh - 2 * 48px );
+    width: 50%;
+    height: calc(100vh - 2 * 48px);
     overflow: scroll;
     padding: 0;
     margin: 0;
+    font-family: monospace;
+    background-color: var(--main-bg-color-2);
+    color: var(--main-text-color-2);
+    border-right: var(--main-bg-color-4) solid 1px;
 }
 
 #callgraph {
     width: 50vw !important;
     height: calc(100vh - 3 * 48px) !important;
-    border: 1px solid green;
-    background-color: #f2f2f2;
+
+    background-color: var(--main-bg-color-2);
+    color: var(--main-text-color-1);
 }
 #toolbar {
     height: 48px;
     padding: 8px;
     display: flex;
+    background-color: var(--main-bg-color-2);
+    color: var(--main-text-color-1);
     /*justify-content: center;*/
 }
 #dash {
     /*margin-top: 10px;*/
     width: auto;
-    height: calc(100vh - 2 * 48px + 2px);
+    height: calc(100vh - 2 * 48px);
     background-color: lightgray;
     display: flex;
     flex-direction: column;
 }
 
-/*pre span:before {*/
-/*  counter-increment: line;*/
-/*  content: counter(line);*/
-/*  display: inline-block;*/
-/*  border-right: 1px solid #ddd;*/
-/*  padding: 0 .5em;*/
-/*  margin-right: .5em;*/
-/*  color: #888*/
-/*}*/
-.h-line {
-    background: RGB(241,231,64);
-}
+
 .h-linenum {
     width: 40px;
     display: inline-block;
     text-align: right;
     padding-right: 20px;
-    color: #86d5f8;
-    background-color: #1f7199;
+    color: var(--main-text-color-1);
+    background-color: var(--main-bg-color-2);
     margin-right: 8px;
+}
+.selected {
+    border-right: solid 8px rgb(241,231,64);
+    margin-right: 0;
+    /*color: white;*/
 }
