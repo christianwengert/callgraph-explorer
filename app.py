@@ -48,6 +48,7 @@ Config.set_library_path(
 CALLGRAPH = defaultdict(list)
 FULLNAMES = defaultdict(set)
 NODELIST = defaultdict()
+DECLARATIONS = defaultdict()
 # FUNCTIONS = dict()
 
 global graph
@@ -104,19 +105,24 @@ def is_excluded(node, xfiles, xprefs):
 
     return False
 
+
 def show_info(node, xfiles, xprefs, cur_fun=None):
     if node.kind == CursorKind.FUNCTION_TEMPLATE:
         if not is_excluded(node, xfiles, xprefs):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
+            NODELIST[fully_qualified_pretty(cur_fun)] = Node.from_cursor(cur_fun)
 
     if node.kind == CursorKind.CXX_METHOD or \
-            node.kind == CursorKind.FUNCTION_DECL:
+            node.kind == CursorKind.FUNCTION_DECL or \
+            node.kind == CursorKind.CONSTRUCTOR:
         if not is_excluded(node, xfiles, xprefs):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
+            NODELIST[fully_qualified_pretty(cur_fun)] = Node.from_cursor(cur_fun)
+            DECLARATIONS[fully_qualified(cur_fun)] = dict(start=node.extent.start.line, end=node.extent.end.line)
 
     if node.kind == CursorKind.CALL_EXPR:
         if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
@@ -124,31 +130,6 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
 
     for c in node.get_children():
         show_info(c, xfiles, xprefs, cur_fun)
-# def show_info(node, xfiles, xprefs, cur_fun=None):
-#     if node.kind == CursorKind.FUNCTION_TEMPLATE:
-#         if not is_excluded(node, xfiles, xprefs):
-#             cur_fun = node
-#             # FULLNAMES[fully_qualified(cur_fun)].add(
-#             #     fully_qualified_pretty(cur_fun))
-#             NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
-#
-#     if node.kind == CursorKind.CXX_METHOD or \
-#             node.kind == CursorKind.FUNCTION_DECL:
-#         if not is_excluded(node, xfiles, xprefs):
-#             cur_fun = node
-#             # FULLNAMES[fully_qualified(cur_fun)].add(
-#             #     fully_qualified_pretty(cur_fun))
-#             NODELIST[fully_qualified_pretty(cur_fun)] = cur_fun
-#             # FUNCTIONS[fully_qualified_pretty(cur_fun)] = cur_fun
-#
-#     if node.kind == CursorKind.CALL_EXPR:
-#         if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
-#             print(fully_qualified_pretty(cur_fun), node.referenced.spelling)
-#             CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
-#
-#     for c in node.get_children():
-#         show_info(c, xfiles, xprefs, cur_fun)
-
 
 def pretty_print(n):
     v = ''
@@ -159,72 +140,38 @@ def pretty_print(n):
     return fully_qualified_pretty(n) + v
 
 
-def print_calls(fun_name, so_far, graph, depth=0):
-    if depth >= 15:
-        print('...<too deep>...')
-        return
+def print_calls(graph):
+    for f, ff in CALLGRAPH.items():
+        # get the caller
+        node_info = NODELIST[f]
+        data = dict(id=node_info.display_name,
+                    label=node_info.display_name,
+                    file=node_info.file,
+                    start=node_info.start,
+                    end=node_info.end,
+                    mangled_name=node_info.mangled_name,
+                    kind=str(node_info.kind),
+                    chain="false")
+        graph.add_node(f, data=data)
+        # get the callees
+        for n in ff:
+            try:
+                nn = DECLARATIONS[fully_qualified(n)]
+            except KeyError:
+                nn = {'start': n.extent.start.line, 'end': n.extent.end.line}
 
-    if fully_qualified_pretty(fun_name) in CALLGRAPH:
-        for f in CALLGRAPH[fun_name]:
-            print('  ' * (depth + 1) + pretty_print(f))
-            if f in so_far:
-                continue
-            so_far.append(f)
-            if fully_qualified_pretty(f) in CALLGRAPH:
-                print_calls(fully_qualified_pretty(f), so_far, graph, depth + 1)
-            else:
-                print_calls(fully_qualified(f), so_far, graph, depth + 1)
-    if fun_name is None:
-        pass
+            # nr = Node.from_cursor(n)
+            data = dict(id=fully_qualified_pretty(n),
+                        label=n.displayname,
+                        file=n.location.file.name,
+                        start=nn['start'],
+                        end=nn['end'],
+                        mangled_name=n.mangled_name,
+                        kind=str(n.kind),
+                        chain="false")
 
-def print_calls_bak(fun_name, so_far, graph, depth=0):
-    if depth >= 15:
-        print('...<too deep>...')
-        return
-    if fun_name in CALLGRAPH:
-        for f in CALLGRAPH[fun_name]:
-            print('  ' * (depth + 1) + pretty_print(f))
-            if f in so_far:
-                continue
-            so_far.append(f)
-            if fully_qualified_pretty(f) in CALLGRAPH:
-                print_calls(fully_qualified_pretty(f), so_far, graph, depth + 1)
-            else:
-                print_calls(fully_qualified(f), so_far, graph, depth + 1)
-    if fun_name is None:
-        for k, v in CALLGRAPH.items():
-            if not k:
-                continue
-            print(k)
-            for f in CALLGRAPH[k]:
-                if f in so_far:
-                    continue
-                print('  ' * (depth + 1) + pretty_print(f))
-
-                n = Node.from_cursor(f)
-                nn = Node.from_cursor(NODELIST[k])
-                graph.add_node(n.spelling, data=dict(id=n.spelling,
-                                                     label=n.display_name,
-                                                     file=n.file,
-                                                     start=n.start,
-                                                     end=n.end,
-                                                     mangled_name=n.mangled_name,
-                                                     kind=str(n.kind),
-                                                     chain="false"))  # , data=n
-                graph.add_node(nn.spelling, data=dict(id=nn.spelling,
-                                                      label=nn.display_name,
-                                                      file=nn.file,
-                                                      start=nn.start,
-                                                      end=nn.end,
-                                                      mangled_name=nn.mangled_name,
-                                                      kind=str(nn.kind),
-                                                      chain="false"))
-                graph.add_edge(nn.spelling, n.spelling)
-                so_far.append(f)
-                if fully_qualified_pretty(f) in CALLGRAPH:
-                    print_calls(fully_qualified_pretty(f), so_far, graph, depth + 1)
-                else:
-                    print_calls(fully_qualified(f), so_far, graph, depth + 1)
+            graph.add_node(fully_qualified_pretty(n), data=data)
+            graph.add_edge(f, fully_qualified_pretty(n))
 
 
 def read_compile_commands(filename):
@@ -249,7 +196,7 @@ def analyze_source_files(cfg):
             if d.severity == d.Error or d.severity == d.Fatal:
                 print(' '.join(c))
                 pprint(('diags', list(map(get_diag_info, tu.diagnostics))))
-                return
+
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
 
 
@@ -298,7 +245,7 @@ def build_ast_graph(filename) -> DiGraph:
 
     analyze_source_files(cfg)
     graph = DiGraph()
-    print_calls(None, [], graph)
+    print_calls(graph)
     print(graph)
 
     return graph
@@ -456,6 +403,11 @@ def render_network(node_data, prev_elements):
                          )
                ) for a, b in graph.edges],
     ]
+    elements2 = [
+            {'data': {'id': 'one::two()', 'label': 'one::two()'}, 'position': {'x': 75, 'y': 75}},
+            {'data': {'id': 'two', 'label': 'Node 2'}, 'position': {'x': 200, 'y': 200}},
+            {'data': {'source': 'one::two()', 'target': 'two'}}
+        ]
 
     return elements
 
