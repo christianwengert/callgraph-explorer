@@ -19,7 +19,7 @@ TEMPLATE_STRING = '''
         {%css%}
     </head>
     <body>
-        <div id="header">Header</div>
+        <div id="header"></div>
         <div id="container">
             <pre id="code"></pre>
             <div>
@@ -48,23 +48,24 @@ external_scripts = [
     {'src': 'static/highlight.min.js', 'type': 'module'},
     {'src': 'static/callbacks.js', 'type': 'module'},
 ]
-app = dash.Dash(__name__, external_scripts=external_scripts)
+app = dash.Dash(__name__,
+                external_scripts=external_scripts,
+                external_stylesheets=['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/regular.min.css'])  # 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
 
 app.index_string = TEMPLATE_STRING
 
 app.layout = html.Div([
     html.Div([
-        dcc.Input(id='filter', type='text', placeholder='Search', debounce=True),
-        # html.Button(id='filter-button', children=["Filter"])
-    ], id='toolbar'),
+        dcc.Input(id='filter', className='w50', type='text', placeholder='Search', debounce=True),
+
+    ], id='graph-toolbar'),
     html.Div([
         dcc.Store(id='code-store'),
-        cyto.Cytoscape(id='callgraph', elements=[],
+        dcc.Loading([
+            cyto.Cytoscape(id='callgraph', elements=[],
                        layout={
                            'name': 'dagre',
                            'spacingFactor': 1.25
-                           # 'directed': "true",
-                           # 'grid': "true"
                        },
                        stylesheet=[
                            {
@@ -94,12 +95,6 @@ app.layout = html.Div([
                                    'border-width': 2
                                }
                            },
-                           # {
-                           #     'selector': 'node[id = "three"]',  # works
-                           #     'style': {
-                           #         'background-color': 'green',
-                           #     }
-                           # },
                            {
                                'selector': 'node[chain = "true"]',
                                'style': {
@@ -131,8 +126,51 @@ app.layout = html.Div([
                        ],
                        # style={'height': '80vh'},
                        )
-    ])
+        ], className='loading', parent_className='outer-loading', type="circle")
+    ]),
+    html.Div([
+        html.Div(id='modal', children=[
+            html.Div([
+                html.Div('Hello', id='modal-header-text'),
+                html.Button([
+                    html.I(className="fa-regular fa-x")
+                ], id='modal-header-close')
+            ], id='modal-header'),
+            html.Div([
+                html.Div([
+                    'Enter the path',
+                    dcc.Input(className='w100'),
+
+                ]),
+            ], id='modal-body'),
+            html.Div([
+                html.Button('Load')
+            ], id='modal-footer')
+        ])
+    ], id='modal-background'),
+    html.Div(id='main-toolbar', children=[
+        html.Button(id='open-project-button', children=[
+            html.I(className='fa-regular fa-folder-open')
+        ]),
+    ]),
 ], id='dash')
+
+
+@app.callback(
+    Output('modal-background', 'style'),
+    Input('modal-header-close', 'n_clicks'),
+    Input('open-project-button', 'n_clicks')
+)
+def show_hide_modal(n_clicks_1, n_clicks_2):
+    context = dash.callback_context
+    if len(context.triggered) and context.triggered[0]:
+        if context.triggered[0]['prop_id'] == 'modal-header-close.n_clicks':
+            return {'display': 'none'}
+        if context.triggered[0]['prop_id'] == 'open-project-button.n_clicks':
+            return {'display': 'flex'}
+
+    return no_update
+
 
 clientside_callback(
     ClientsideFunction(
@@ -143,6 +181,7 @@ clientside_callback(
     Input('code-store', 'data'),
     # Input('in-component2', 'value')
 )
+
 
 
 @app.callback(
