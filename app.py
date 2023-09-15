@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+import uuid
+from collections import defaultdict
+
 import dash
 import networkx as nx
 from dash import dcc, State, no_update, clientside_callback, ClientsideFunction
@@ -40,9 +43,8 @@ TEMPLATE_STRING = '''
 # Load extra layouts
 cyto.load_extra_layouts()
 
+SERVER_STORE = defaultdict(dict)
 
-global graph  # todo: remove such global variables, for multi user that won't work well
-global old_graph
 
 external_scripts = [
     {'src': 'static/highlight.min.js', 'type': 'module'},
@@ -61,6 +63,7 @@ app.layout = html.Div([
     ], id='graph-toolbar'),
     html.Div([
         dcc.Store(id='code-store'),
+        dcc.Store(id='session-store', storage_type='memory'),  # Store the session identifier
         dcc.Loading([
             cyto.Cytoscape(id='callgraph', elements=[],
                        layout={
@@ -139,8 +142,7 @@ app.layout = html.Div([
             html.Div([
                 html.Div([
                     'Enter the path',
-                    dcc.Input(className='w100'),
-
+                    dcc.Input(className='w100', id='path-string', value='./testfiles/test.cpp', debounce=True),
                 ]),
             ], id='modal-body'),
             html.Div([
@@ -187,10 +189,13 @@ clientside_callback(
 @app.callback(
     Output('code-store', 'data'),
     Input('callgraph', 'tapNodeData'),
+    State('session-store', 'data')
 )
-def show_code(node_data):
-    global graph
+def show_code(node_data, session):
+
     if not node_data:
+        return no_update
+    if not session:
         return no_update
 
     with open(node_data['file'], 'r') as f:
@@ -202,22 +207,54 @@ def show_code(node_data):
     return {'code': contents, 'start': start, 'end': end, 'filename': node_data['file']}
 
 
+
+#
+#
+# @app.callback(
+#     Output('session-store', 'data'),
+#     Input('session-store', 'modified_timestamp'),
+#     State('session-store', 'data')
+# )
+# def generate_session_id(modified_timestamp, current_session_data):
+#     if modified_timestamp:
+#         # Generate a unique session identifier (e.g., using UUID)
+#         session_id = str(uuid.uuid4())
+#         # Store the session identifier in the dcc.Store component
+#         current_session_data = session_id
+#
+#     return current_session_data
 @app.callback(
     Output('callgraph', 'elements'),
+    Output('session-store', 'data'),
     # Input('filter', 'value'),
     Input('callgraph', 'tapNodeData'),
     Input('filter', 'n_submit'),
+    Input('path-string', 'value'),
+    # Input('filter', 'n_submit'),
     State('filter', 'value'),
-    State('callgraph', 'elements')
-)
-def render_network(node_data, _n_sub, search_value, prev_elements):
+    State('callgraph', 'elements'),
+    State('session-store', 'data')
 
-    global graph, old_graph
-    if node_data is None and not prev_elements:
-        graph = build_ast_graph('/Users/christianwengert/src/minimal-c-test/test.cpp')
-        old_graph = graph.copy()
+
+)
+def render_network(node_data, _n_sub, path, search_value, prev_elements, session):
+
+    if session is None:
+        # Generate a unique session identifier (e.g., using UUID)
+        session_id = str(uuid.uuid4())
+        # Store the session identifier in the dcc.Store component
+        session = session_id
+
+    if session not in SERVER_STORE:
+        SERVER_STORE[session] = dict()
+        SERVER_STORE[session][path] = dict()
+
+    if path in SERVER_STORE[session] and SERVER_STORE[session][path]:
+        graph = SERVER_STORE[session][path]['graph']
+        graph_backup = SERVER_STORE[session][path]['graph_backup']
     else:
-        graph = old_graph
+        graph = build_ast_graph(path)
+        graph_backup = graph.copy()
 
     context = dash.callback_context
     if len(context.triggered) and context.triggered[0]:
@@ -241,7 +278,7 @@ def render_network(node_data, _n_sub, search_value, prev_elements):
                 filtered_graph = graph.subgraph(reachable_nodes).copy()
             else:
                 filtered_graph = nx.DiGraph()  # empty
-            old_graph = graph.copy()
+            graph_backup = graph.copy()
             graph = filtered_graph
 
     # clean up
@@ -269,7 +306,12 @@ def render_network(node_data, _n_sub, search_value, prev_elements):
                          )
                ) for a, b in graph.edges],
     ]
-    return elements
+
+
+    SERVER_STORE[session][path]['graph'] = graph
+    SERVER_STORE[session][path]['graph_backup'] = graph_backup
+
+    return elements, session
 
 
 if __name__ == '__main__':

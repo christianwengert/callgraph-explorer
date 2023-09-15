@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import os.path
 from collections import defaultdict
 from pprint import pprint
 
@@ -171,9 +172,9 @@ def read_compile_commands(filename):
         return [{'command': '', 'file': filename}]
 
 
-def analyze_source_files(cfg):
+def analyze_source_files(file, cfg):
     print('reading source files...')
-    for cmd in read_compile_commands(cfg['db']):
+    for cmd in read_compile_commands(file):
         index = Index.create()
         c = cfg['clang_args']
         tu = index.parse(cmd['file'], c)
@@ -189,15 +190,19 @@ def analyze_source_files(cfg):
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
 
 
-def build_ast_graph(filename) -> DiGraph:
-    cfg = {'db': filename,
+def build_ast_graph(files) -> DiGraph:
+
+    if os.path.isfile(files):
+        files = [files]
+
+    cfg = {'db': None,
            'clang_args': [],
            'excluded_prefixes': ['std::', '__libcpp', 'operator', '__builtin', '__c11_atomic'],
            'excluded_paths': ['/usr', '/Applications'],
            'config_filename': None,
            }
-
-    analyze_source_files(cfg)
+    for file in files:
+        analyze_source_files(file, cfg)
 
     graph = get_callgraph()
     print(graph)
