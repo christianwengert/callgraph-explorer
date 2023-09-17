@@ -142,7 +142,9 @@ app.layout = html.Div([
             html.Div([
                 html.Div([
                     'Enter the path',
-                    dcc.Input(className='w100', id='path-string', value='./testfiles/test.cpp', debounce=True),
+                    #/Users/christianwengert/src/llama/llama.cpp/llama.cpp
+                    dcc.Input(className='w100', id='path-string',
+                              value='./testfiles', debounce=True),
                 ]),
             ], id='modal-body'),
             html.Div([
@@ -306,7 +308,6 @@ def render_network(node_data, _n_sub, path, search_value, prev_elements, session
                          )
                ) for a, b in graph.edges],
     ]
-
 
     SERVER_STORE[session][path]['graph'] = graph
     SERVER_STORE[session][path]['graph_backup'] = graph_backup

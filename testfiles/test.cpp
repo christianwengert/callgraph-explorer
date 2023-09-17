@@ -1,5 +1,9 @@
 #include <iostream>
+#include "outside.h"
+
+
 using namespace std;
+
 
 bool check_prime(int);
 
@@ -34,6 +38,9 @@ int main() {
 
     auto adder = AddNumber();
     cout << adder.add(4, 4) << endl;
+
+    // now calling something from outside
+    int result = outside_add(5, 7); // Call the add function
 
   return 0;
 }
