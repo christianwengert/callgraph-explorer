@@ -2,7 +2,7 @@
 // const hljs = require('highlight.js');
 
 
-import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/es/highlight.min.js';
+import hljs from './highlight.min.js';
 
 
 
