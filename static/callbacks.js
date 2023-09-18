@@ -33,9 +33,11 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
             }
             console.log(start, end)
 
-            elem.innerHTML = output
+            elem.innerHTML = output;
 
+            const firstSelected = document.querySelector('.selected')
 
+            firstSelected.scrollIntoView();
 
             return {};
         }

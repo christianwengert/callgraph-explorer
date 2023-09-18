@@ -120,9 +120,9 @@ app.layout = html.Div([
                                'style': {
                                    # The default curve style does not work with certain arrows
                                    'curve-style': 'bezier',
-                                   'target-arrow-color': 'rgb(59, 127, 180)a',
+                                   'target-arrow-color': 'rgb(59, 127, 180)',
                                    'target-arrow-shape': 'triangle',
-                                   'line-color': 'rgb(59, 127, 180)a'
+                                   'line-color': 'rgb(59, 127, 180)'
                                }
                            },
 
@@ -302,23 +302,38 @@ def render_network(node_data, _n_sub, path, search_value, prev_elements, session
         #     graph.nodes[s]['data']['chain'] = "true"
         #     graph.nodes[s]['data']['relationship'] = "child"
 
+    nodes = [dict(data=graph.nodes[k]['data']) for k in graph.nodes if k]
+    node_names = [n['data']['id'] for n in nodes]
+
+    edges = []
+    for a, b in graph.edges:
+
+        gaga = "true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get('chain') == "true" else "false"
+        if not a or not b:
+            continue
+
+        elif a in node_names and b in node_names:
+            edges.append(
+                dict(data=dict(source=a,
+                               target=b,
+                               gaga=gaga))  # todo: what is gaga again?
+            )
+        else:
+            a_ok = a in node_names
+            b_ok = b in node_names
+            c = a_ok and b_ok
+            print(f'Some edges are wrong {a} ({a_ok}) and {b} ({b_ok})')
+
+    # edges = [dict(data=dict(source=a,
+    #                         target=b,
+    #                         gaga="true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get(
+    #                          'chain') == "true" else "false")) for a, b in graph.edges if a and b]
+
     elements = [
-        *[dict(data=graph.nodes[k]['data']) for k in graph.nodes if k],
-        # *[
-        #     dict(data=dict(source=graph.nodes[],
-        #                      target=b,)
-        # ]
-        *[dict(data=dict(source=a,
-                         target=b,
-                         gaga="true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get('chain') == "true" else "false"
-                         )
-               ) for a, b in graph.edges if a and b],
+        *nodes,
+        *edges,
     ]
 
-    # elements.append(
-    #     dict(data=dict(source=elements[0]['data']['id'],
-    #                                         target=elements[1]['data']['id']))
-    # )
 
     if path not in SERVER_STORE[session]:
         SERVER_STORE[session][path] = dict()
