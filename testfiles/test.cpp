@@ -1,6 +1,6 @@
 #include <iostream>
 #include "outside.h"
-
+#include "struct.h"
 
 using namespace std;
 
@@ -30,6 +30,12 @@ int main() {
 
   cout << "Enter a positive  integer: ";
   cin >> n;
+
+    Person person1("Alice", 25);
+    person1.addAge(5);
+
+    // Access and print the member variables
+    std::cout << "Name: " << person1.name << std::endl;
 
   if (check_prime(n))
     cout << n << " is a prime number.";

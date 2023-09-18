@@ -144,7 +144,9 @@ app.layout = html.Div([
                     'Enter the path',
                     #/Users/christianwengert/src/llama/llama.cpp/llama.cpp
                     dcc.Input(className='w100', id='path-string',
-                              value='./testfiles', debounce=True),
+                              value='./testfiles',
+                              # value='/Users/christianwengert/src/llama/llama.cpp/llama.cpp',
+                              debounce=True),
                 ]),
             ], id='modal-body'),
             html.Div([
@@ -301,14 +303,25 @@ def render_network(node_data, _n_sub, path, search_value, prev_elements, session
         #     graph.nodes[s]['data']['relationship'] = "child"
 
     elements = [
-        *[dict(data=graph.nodes[k]['data']) for k in graph.nodes],
+        *[dict(data=graph.nodes[k]['data']) for k in graph.nodes if k],
+        # *[
+        #     dict(data=dict(source=graph.nodes[],
+        #                      target=b,)
+        # ]
         *[dict(data=dict(source=a,
                          target=b,
                          gaga="true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get('chain') == "true" else "false"
                          )
-               ) for a, b in graph.edges],
+               ) for a, b in graph.edges if a and b],
     ]
 
+    # elements.append(
+    #     dict(data=dict(source=elements[0]['data']['id'],
+    #                                         target=elements[1]['data']['id']))
+    # )
+
+    if path not in SERVER_STORE[session]:
+        SERVER_STORE[session][path] = dict()
     SERVER_STORE[session][path]['graph'] = graph
     SERVER_STORE[session][path]['graph_backup'] = graph_backup
 

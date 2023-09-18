@@ -157,7 +157,8 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
 
     if node.kind == CursorKind.CXX_METHOD or \
             node.kind == CursorKind.FUNCTION_DECL or \
-            node.kind == CursorKind.CONSTRUCTOR:
+            node.kind == CursorKind.CONSTRUCTOR or \
+            node.kind == CursorKind.STRUCT_DECL:
         if not is_excluded(node, xfiles, xprefs):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
