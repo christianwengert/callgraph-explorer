@@ -146,7 +146,9 @@ def is_excluded(node, xfiles, xprefs):
 
 
 def show_info(node, xfiles, xprefs, cur_fun=None):
-    print(node.spelling, node.kind)
+    if node.kind in [CursorKind.MEMBER_REF_EXPR, CursorKind.CALL_EXPR, CursorKind.DECL_REF_EXPR]:
+        if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
+            print(f'FN {node.kind}: {fully_qualified_pretty(cur_fun)}, {fully_qualified_pretty(node.referenced)}, {fully_qualified_pretty(node.lexical_parent)}')
     if not is_excluded(node, xfiles, xprefs):
         if node.kind == CursorKind.FUNCTION_TEMPLATE:
             cur_fun = node
@@ -165,13 +167,12 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
             NODELIST[fully_qualified_pretty(cur_fun)] = Node.from_cursor(cur_fun)
             DECLARATIONS[fully_qualified(cur_fun)] = dict(start=node.extent.start.line, end=node.extent.end.line, file=node.location.file.name)
 
-        if node.kind == CursorKind.CALL_EXPR:
-            print(f'CALL_EXPR: {node.spelling}, {node.displayname}')
-            try:
-                print(node.referenced.spelling)
-            except:
-                a = 2
-            if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
+        if node.kind in [CursorKind.CALL_EXPR]:
+
+            if node.referenced:  # and not is_excluded(node.referenced, xfiles, xprefs):
+            #     print(f'CALL_EXPR: {fully_qualified_pretty(cur_fun)}, {fully_qualified_pretty(node.referenced)}')
+
+
 
                 CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
             # SECONDARY_CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.)
@@ -208,7 +209,11 @@ def analyze_source_files(file: Union[str, Path], cfg, index):
     for cmd in read_compile_commands(file):
 
         c = cfg['clang_args']
-        tu = index.parse(cmd['file'], ['-I ./testfiles', '-stdlib=libc++'])  # , '-x c++','-std=c++11'
+        tu = index.parse(cmd['file'], [
+            '-I./testfiles',
+            '-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/15.0.0/include',
+            '-stdlib=libc++'
+        ])  # , '-x c++','-std=c++11'
         print(cmd['file'])
         if not tu:
             print("unable to load input")
