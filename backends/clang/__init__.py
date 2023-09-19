@@ -22,8 +22,8 @@ def get_callgraph():
         node_info = NODELIST.get(f, None)
         if node_info is None:
             continue
-        data = dict(id=node_info.display_name,
-                    label=node_info.display_name,
+        data = dict(id=f,
+                    label=f,
                     file=node_info.file,
                     start=node_info.start,
                     end=node_info.end,
@@ -33,17 +33,13 @@ def get_callgraph():
         graph.add_node(f, data=data)
         # get the callees
         for n in ff:
-            # try:
-            #     nn = DECLARATIONS[fully_qualified(n)]
-            # except KeyError:
-            #     nn = {'start': n.extent.start.line, 'end': n.extent.end.line}
             definition = n.get_definition()
             try:
                 data = dict(id=fully_qualified_pretty(definition),
-                            label=definition.displayname,
+                            label=fully_qualified_pretty(definition),
                             file=definition.location.file.name,
-                            start=definition.extent.start.line,  #nn['start'],
-                            end=definition.extent.end.line,  #nn['end'],
+                            start=definition.extent.start.line,
+                            end=definition.extent.end.line,
                             mangled_name=definition.mangled_name,
                             kind=str(definition.kind),
                             chain="false")
@@ -55,7 +51,7 @@ def get_callgraph():
 
                 # nr = Node.from_cursor(n)
                 data = dict(id=fully_qualified_pretty(n),
-                            label=n.displayname,
+                            label=fully_qualified_pretty(n),
                             file=nn['file'],
                             start=nn['start'],
                             end=nn['end'],
@@ -64,6 +60,8 @@ def get_callgraph():
                             chain="false")
             graph.add_node(fully_qualified_pretty(n), data=data)
             graph.add_edge(f, fully_qualified_pretty(n))
+            if f == 'llama_model_loader::llama_model_loader(const std::string &, bool)' and fully_qualified_pretty(n) == 'gguf_get_n_kv(struct gguf_context *)':
+                return graph
     return graph
 
 
@@ -148,27 +146,34 @@ def is_excluded(node, xfiles, xprefs):
 
 
 def show_info(node, xfiles, xprefs, cur_fun=None):
-    if node.kind == CursorKind.FUNCTION_TEMPLATE:
-        if not is_excluded(node, xfiles, xprefs):
+    print(node.spelling, node.kind)
+    if not is_excluded(node, xfiles, xprefs):
+        if node.kind == CursorKind.FUNCTION_TEMPLATE:
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
             NODELIST[fully_qualified_pretty(cur_fun)] = Node.from_cursor(cur_fun)
 
-    if node.kind == CursorKind.CXX_METHOD or \
-            node.kind == CursorKind.FUNCTION_DECL or \
-            node.kind == CursorKind.CONSTRUCTOR or \
-            node.kind == CursorKind.STRUCT_DECL:
-        if not is_excluded(node, xfiles, xprefs):
+        if node.kind == CursorKind.CXX_METHOD or \
+                node.kind == CursorKind.FUNCTION_DECL or \
+                node.kind == CursorKind.CONSTRUCTOR or \
+                node.kind == CursorKind.STRUCT_DECL:
+            # if not is_excluded(node, xfiles, xprefs):
             cur_fun = node
             FULLNAMES[fully_qualified(cur_fun)].add(
                 fully_qualified_pretty(cur_fun))
             NODELIST[fully_qualified_pretty(cur_fun)] = Node.from_cursor(cur_fun)
             DECLARATIONS[fully_qualified(cur_fun)] = dict(start=node.extent.start.line, end=node.extent.end.line, file=node.location.file.name)
 
-    if node.kind == CursorKind.CALL_EXPR:
-        if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
-            CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
+        if node.kind == CursorKind.CALL_EXPR:
+            print(f'CALL_EXPR: {node.spelling}, {node.displayname}')
+            try:
+                print(node.referenced.spelling)
+            except:
+                a = 2
+            if node.referenced and not is_excluded(node.referenced, xfiles, xprefs):
+
+                CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
             # SECONDARY_CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.)
             # print(node.def)
 
@@ -203,7 +208,7 @@ def analyze_source_files(file: Union[str, Path], cfg, index):
     for cmd in read_compile_commands(file):
 
         c = cfg['clang_args']
-        tu = index.parse(cmd['file'], ['-I ./testfiles'])  # , '-x c++','-std=c++11'
+        tu = index.parse(cmd['file'], ['-I ./testfiles', '-stdlib=libc++'])  # , '-x c++','-std=c++11'
         print(cmd['file'])
         if not tu:
             print("unable to load input")
