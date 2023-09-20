@@ -26,9 +26,6 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
                 }
                 output += `<span class='h-linenum ${selected}'>` + i + "</span>"
                 output += lines[i]
-                /*if (i >= start && i <= end) {
-                    output += "</span>"
-                }*/
                 output += '\n'
             }
             console.log(start, end)
