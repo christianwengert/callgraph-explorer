@@ -10,35 +10,8 @@ import dash_cytoscape as cyto
 from dash import Output, Input
 
 from backends.clang import build_ast_graph
+from ui import TEMPLATE_STRING
 from utils.networkx import get_parents_recursive
-
-TEMPLATE_STRING = '''
-<!DOCTYPE html>
-<html>
-    <head>
-        {%metas%}
-        <title>{%title%}</title>
-        {%favicon%}
-        {%css%}
-    </head>
-    <body>
-        <div id="header"></div>
-        <div id="container">
-            <pre id="code"></pre>
-            <div>
-            {%app_entry%}
-            </div>
-        </div>
-        
-        <footer>
-            {%config%}
-            {%scripts%}
-            {%renderer%}
-        </footer>
-        <div id="footer">My Custom footer</div>
-    </body>
-</html>
-'''
 
 # Load extra layouts
 cyto.load_extra_layouts()
@@ -72,11 +45,12 @@ app.layout = html.Div([
                            layout={
                                'name': 'dagre',
                                # 'name': 'klay'
-                               'spacingFactor': 1.4,
+                               'spacingFactor': 1.5,
                                # 'align': 'UR'
-                               'rankSep': 100,
+                               'rankSep': 150,
                                # 'nodeSep': 200,
-                               'edgeSep': 200,
+                               'edgeSep': 150,
+                               'padding': 100,
                            },
                            stylesheet=[
                                {
@@ -115,7 +89,7 @@ app.layout = html.Div([
                                    'selector': 'edge',
                                    'style': {
                                        # The default curve style does not work with certain arrows
-                                       'curve-style': 'taxi',  # 'bezier',
+                                       'curve-style': 'bezier',  # 'bezier',
                                        'target-arrow-color': 'rgb(184, 194, 200)',
                                        'target-arrow-shape': 'triangle',
                                        'line-color': 'rgb(184, 194, 200)',
@@ -123,7 +97,7 @@ app.layout = html.Div([
                                    }
                                },
                                {
-                                   'selector': 'edge[gaga = "true"]',
+                                   'selector': 'edge[highlight = "true"]',
                                    'style': {
                                        # The default curve style does not work with certain arrows
                                        'curve-style': 'bezier',
@@ -200,7 +174,6 @@ clientside_callback(
     ),
     Output('dash', 'style'),
     Input('code-store', 'data'),
-    # Input('in-component2', 'value')
 )
 
 
@@ -220,7 +193,6 @@ def show_code(node_data, session):
     start = node_data['start']
     end = node_data['end']
 
-    # code = "\n".join(contents.splitlines()[start:end])
     return {'code': contents, 'start': start, 'end': end, 'filename': node_data['file']}
 
 
@@ -312,8 +284,7 @@ def render_network(node_data, _n_sub, _n_load, path, include_path, search_value,
         edges = []
         for a, b in graph.edges:
 
-            gaga = "true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get(
-                'chain') == "true" else "false"
+            highlight = "true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get('chain') == "true" else "false"
             if not a or not b:
                 continue
 
@@ -321,18 +292,13 @@ def render_network(node_data, _n_sub, _n_load, path, include_path, search_value,
                 edges.append(
                     dict(data=dict(source=a,
                                    target=b,
-                                   gaga=gaga))  # todo: what is gaga again?
+                                   highlight=highlight))
                 )
             else:
                 a_ok = a in node_names
                 b_ok = b in node_names
 
                 print(f'Some edges are wrong {a} ({a_ok}) and {b} ({b_ok})')
-
-        # edges = [dict(data=dict(source=a,
-        #                         target=b,
-        #                         gaga="true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get(
-        #                          'chain') == "true" else "false")) for a, b in graph.edges if a and b]
 
         elements = [
             *nodes,
