@@ -138,6 +138,7 @@ body {
 }
 #modal-footer {
     margin-top: auto;
+    padding-top: 8px;
     margin-left: auto;
 }
 button {

@@ -1,5 +1,8 @@
 #ifndef PERSON_H
 #define PERSON_H
+
+#include <string>
+
 struct Person {
     // Public member variables
     std::string name;
@@ -13,6 +16,10 @@ struct Person {
 
     void addAge(int yearsToAdd) {
         age += yearsToAdd;
+    }
+
+    bool neverCalled() {
+        return True;
     }
 };
 #endif

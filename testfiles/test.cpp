@@ -14,6 +14,8 @@ int _inline_adder(int a, int b) {
 
 
 class AddNumber {
+private:
+    int nonce();
 public:
     int add(int a, int b);  // adds something
 };
@@ -21,6 +23,11 @@ public:
 int AddNumber::add(int a, int b) { // implementation
     return _inline_adder(a, b);
 }
+int AddNumber::nonce() { // implementation
+    return _inline_adder(17, 19);
+}
+
+
 
 
 
@@ -38,15 +45,19 @@ int main() {
     std::cout << "Name: " << person1.name << std::endl;
 
   if (check_prime(n))
-    cout << n << " is a prime number.";
+    {cout << n << " is a prime number.";}
   else
-    cout << n << " is not a prime number.";
+    {cout << n << " is not a prime number.";}
+//   check_prime(3);
+
 
     auto adder = AddNumber();
-    cout << adder.add(4, 4) << endl;
+    auto k = adder.add(4, 4);
+    cout << k << endl;
 
     // now calling something from outside
     int result = outside_add(5, 7); // Call the add function
+    cout << result << endl;
 
   return 0;
 }
