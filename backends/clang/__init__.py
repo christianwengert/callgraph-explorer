@@ -34,7 +34,7 @@ def get_callgraph():
         # get the callees
         for n in ff:
             definition = n.get_definition()
-            try:
+            if definition:
                 data = dict(id=fully_qualified_pretty(definition),
                             label=fully_qualified_pretty(definition),
                             file=definition.location.file.name,
@@ -43,7 +43,7 @@ def get_callgraph():
                             mangled_name=definition.mangled_name,
                             kind=str(definition.kind),
                             chain="false")
-            except:  # todo fallback for classes?
+            else:
                 try:
                     nn = DECLARATIONS[fully_qualified(n)]
                 except KeyError:
@@ -170,18 +170,7 @@ def show_info(node, xfiles, xprefs, cur_fun=None):
         if node.kind in [CursorKind.CALL_EXPR]:
 
             if node.referenced:  # and not is_excluded(node.referenced, xfiles, xprefs):
-            #     print(f'CALL_EXPR: {fully_qualified_pretty(cur_fun)}, {fully_qualified_pretty(node.referenced)}')
-
-
-
                 CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.referenced)
-            # SECONDARY_CALLGRAPH[fully_qualified_pretty(cur_fun)].append(node.)
-            # print(node.def)
-
-    # if not is_excluded(node, xfiles, xprefs):
-    # if node.kind == CursorKind.CALL_EXPR or node.kind == CursorKind.UNEXPOSED_EXPR:
-    #     print(fully_qualified_pretty(node), fully_qualified_pretty(node.referenced))
-    #     a = 2
 
     for c in node.get_children():
         show_info(c, xfiles, xprefs, cur_fun)
@@ -209,11 +198,7 @@ def analyze_source_files(file: Union[str, Path], cfg, index):
     for cmd in read_compile_commands(file):
 
         c = cfg['clang_args']
-        tu = index.parse(cmd['file'], [
-            '-I./testfiles',
-            '-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/15.0.0/include',
-            '-stdlib=libc++'
-        ])  # , '-x c++','-std=c++11'
+        tu = index.parse(cmd['file'], c)  # , '-x c++','-std=c++11'
         print(cmd['file'])
         if not tu:
             print("unable to load input")
@@ -226,7 +211,7 @@ def analyze_source_files(file: Union[str, Path], cfg, index):
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
 
 
-def build_ast_graph(path) -> DiGraph:
+def build_ast_graph(path, include_path) -> DiGraph:
 
     if os.path.isfile(path):
         files = [Path(path)]
@@ -237,7 +222,7 @@ def build_ast_graph(path) -> DiGraph:
                 files.append(p)
 
     cfg = {'db': None,
-           'clang_args': [],
+           'clang_args': include_path.split(),
            'excluded_prefixes': ['std::', '__libcpp', 'operator', '__builtin', '__c11_atomic'],
            'excluded_paths': ['/usr', '/Applications'],
            'config_filename': None,
