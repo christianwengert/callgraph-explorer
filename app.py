@@ -265,6 +265,7 @@ def render_network(node_data, _n_sub, _n_load, path, include_path, search_value,
     if graph:
         if len(context.triggered) and context.triggered[0]:
             if search_value:  # do nothing on empty
+                graph = graph_backup.copy()  # Restore
                 target_nodes = set()
                 for n in graph.nodes:
                     if search_value.lower() in n.lower():
@@ -283,10 +284,10 @@ def render_network(node_data, _n_sub, _n_load, path, include_path, search_value,
                     filtered_graph = graph.subgraph(reachable_nodes).copy()
                 else:
                     filtered_graph = nx.DiGraph()  # empty
-                graph_backup = graph.copy()
+                # graph_backup = graph.copy()
                 graph = filtered_graph
             else:
-                graph = graph_backup
+                graph = graph_backup.copy()
 
         # clean up
         for n in graph.nodes:
@@ -338,7 +339,7 @@ def render_network(node_data, _n_sub, _n_load, path, include_path, search_value,
             *edges,
         ]
 
-        if path not in SERVER_STORE[session]:
+        if path and path not in SERVER_STORE[session]:
             SERVER_STORE[session][path] = dict()
         SERVER_STORE[session][path]['graph'] = graph
         SERVER_STORE[session][path]['graph_backup'] = graph_backup
