@@ -117,20 +117,27 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
             graph = build_ast_graph(path, include_path)
             graph_backup = graph.copy()
 
-    if graph:
+    if len(context.triggered) and context.triggered[0]:
+        if search_value:  # do nothing on empty
+            # filter and do not forget to take the backup
+            for n in graph.nodes:
+                graph_backup.nodes[n]['data']['filtered'] = "false"
+            graph = get_filtered_subgraph(graph_backup.copy(), search_value)
+        else:
+            # just restore the full graph
+            if graph_backup is not None:
+                graph = graph_backup.copy()
+                for n in graph.nodes:
+                    graph_backup.nodes[n]['data']['filtered'] = "false"
+
+    if graph is not None:
         # reset all nodes to clean nodes (no highlight, no selection)
+
         for n in graph.nodes:
             graph.nodes[n]['data']['chain'] = 'false'
             graph.nodes[n]['data']['selected'] = 'false'
-            graph.nodes[n]['data']['filtered'] = "false"
+        #
         # filter nodes by text
-        if len(context.triggered) and context.triggered[0]:
-            if search_value:  # do nothing on empty
-                # filter and do not forget to take the backup
-                graph = get_filtered_subgraph(graph_backup.copy(), search_value)
-            else:
-                # just restore the full graph
-                graph = graph_backup.copy()
 
         if node_data and 'id' in node_data and node_data['id'] in graph.nodes and graph.nodes[node_data['id']]:
             graph.nodes[node_data['id']]['data']['selected'] = "true"
@@ -180,6 +187,7 @@ def get_filtered_subgraph(graph, search_value):
         if search_value.lower() in n.lower():
             target_nodes.add(n)
             graph.nodes[n]['data']['filtered'] = "true"
+
     reachable_nodes = set()
     # Perform a breadth-first search from each target node
     for node in target_nodes:
