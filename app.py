@@ -118,17 +118,12 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
             graph_backup = graph.copy()
 
         if context.triggered[0]['prop_id'] == 'filter.n_submit':
+            graph = graph_backup.copy()
+            for n in graph.nodes:
+                graph_backup.nodes[n]['data']['filtered'] = "false"
             if search_value:  # do nothing on empty
                 # filter and do not forget to take the backup
-                for n in graph.nodes:
-                    graph_backup.nodes[n]['data']['filtered'] = "false"
-                graph = get_filtered_subgraph(graph_backup.copy(), search_value)
-            else:
-                # just restore the full graph
-                if graph_backup is not None:
-                    graph = graph_backup.copy()
-                    for n in graph.nodes:
-                        graph_backup.nodes[n]['data']['filtered'] = "false"
+                graph = get_filtered_subgraph(graph, search_value)
 
     if graph is not None:
         # reset all nodes to clean nodes (no highlight, no selection)
