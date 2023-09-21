@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import uuid
 from collections import defaultdict
+from typing import Dict, List, Optional
 
 import dash
 import networkx as nx
@@ -65,7 +66,7 @@ clientside_callback(
     Input('callgraph', 'tapNodeData'),
     State('session-store', 'data')
 )
-def store_code(node_data, session):
+def store_code(node_data: Optional[Dict], session: Optional[str]):
     # Code will be stored in local memory
     # this local memory store then calls the clientside callback (see static/callbacks.js:hl_code)
     if not node_data:
@@ -94,7 +95,7 @@ def store_code(node_data, session):
 
 )
 def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_value, session):
-    graph = graph_backup = None
+    graph = graph_backup = None  # type: Optional[nx.Graph]
     elements = []
     if session is None:
         # Generate a unique session identifier (e.g., using UUID)
@@ -119,7 +120,7 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
 
         if context.triggered[0]['prop_id'] == 'filter.n_submit':
             graph = graph_backup.copy()
-            for n in graph.nodes:
+            for n in graph.nodes:  # remove prior filter highlights
                 graph_backup.nodes[n]['data']['filtered'] = "false"
             if search_value:  # do nothing on empty
                 # filter and do not forget to take the backup
@@ -127,12 +128,9 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
 
     if graph is not None:
         # reset all nodes to clean nodes (no highlight, no selection)
-
         for n in graph.nodes:
             graph.nodes[n]['data']['chain'] = 'false'
             graph.nodes[n]['data']['selected'] = 'false'
-        #
-        # filter nodes by text
 
         if node_data and 'id' in node_data and node_data['id'] in graph.nodes and graph.nodes[node_data['id']]:
             graph.nodes[node_data['id']]['data']['selected'] = "true"
@@ -143,30 +141,7 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
                 graph.nodes[p]['data']['relationship'] = "parent"
 
         # build cytoscape
-        nodes = [dict(data=graph.nodes[k]['data']) for k in graph.nodes if k]
-        node_names = [n['data']['id'] for n in nodes]
-        edges = []
-        for a, b in graph.edges:
-
-            highlight = "true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get('chain') == "true" else "false"
-            if not a or not b:
-                continue
-
-            elif a in node_names and b in node_names:
-                edges.append(
-                    dict(data=dict(source=a,
-                                   target=b,
-                                   highlight=highlight))
-                )
-            else:
-                a_ok = a in node_names
-                b_ok = b in node_names
-                print(f'Some edges are wrong {a} ({a_ok}) and {b} ({b_ok})')
-
-        elements = [
-            *nodes,
-            *edges,
-        ]
+        elements = get_cytoscape_data_from_nx(graph)
 
         if path and path not in SERVER_STORE[session]:
             SERVER_STORE[session][path] = dict()
@@ -176,7 +151,35 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
     return elements, session
 
 
-def get_filtered_subgraph(graph, search_value):
+def get_cytoscape_data_from_nx(graph: nx.Graph) -> List[Dict]:
+    nodes = [dict(data=graph.nodes[k]['data']) for k in graph.nodes if k]
+    node_names = [n['data']['id'] for n in nodes]
+    edges = []
+    for a, b in graph.edges:
+
+        highlight = "true" if graph.nodes[a]['data'].get('chain') == "true" and graph.nodes[b]['data'].get(
+            'chain') == "true" else "false"
+        if not a or not b:
+            continue
+
+        elif a in node_names and b in node_names:
+            edges.append(
+                dict(data=dict(source=a,
+                               target=b,
+                               highlight=highlight))
+            )
+        else:
+            a_ok = a in node_names
+            b_ok = b in node_names
+            print(f'Some edges are wrong {a} ({a_ok}) and {b} ({b_ok})')
+    elements = [
+        *nodes,
+        *edges,
+    ]
+    return elements
+
+
+def get_filtered_subgraph(graph: nx.Graph, search_value: str):
     target_nodes = set()
     for n in graph.nodes:
         if search_value.lower() in n.lower():
