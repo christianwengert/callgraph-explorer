@@ -121,4 +121,12 @@ def get_cyto_stylesheet() -> List[Dict[str, Any]]:
                 'line-color': 'rgb(59, 127, 180)'
             }
         },
+        {
+            'selector': 'node[filtered = "true"]',
+            'style': {
+                # 'border-color': 'rgb(241,231,64)',
+                # 'border-width': 2
+                'color': 'rgb(241,231,64)'
+            }
+        },
     ]

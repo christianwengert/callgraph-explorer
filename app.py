@@ -118,6 +118,11 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
             graph_backup = graph.copy()
 
     if graph:
+        # reset all nodes to clean nodes (no highlight, no selection)
+        for n in graph.nodes:
+            graph.nodes[n]['data']['chain'] = 'false'
+            graph.nodes[n]['data']['selected'] = 'false'
+            graph.nodes[n]['data']['filtered'] = "false"
         # filter nodes by text
         if len(context.triggered) and context.triggered[0]:
             if search_value:  # do nothing on empty
@@ -127,10 +132,6 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
                 # just restore the full graph
                 graph = graph_backup.copy()
 
-        # reset all nodes to clean nodes (no highlight, no selection)
-        for n in graph.nodes:
-            graph.nodes[n]['data']['chain'] = 'false'
-            graph.nodes[n]['data']['selected'] = 'false'
         if node_data and 'id' in node_data and node_data['id'] in graph.nodes and graph.nodes[node_data['id']]:
             graph.nodes[node_data['id']]['data']['selected'] = "true"
             # now highlight
@@ -178,6 +179,7 @@ def get_filtered_subgraph(graph, search_value):
     for n in graph.nodes:
         if search_value.lower() in n.lower():
             target_nodes.add(n)
+            graph.nodes[n]['data']['filtered'] = "true"
     reachable_nodes = set()
     # Perform a breadth-first search from each target node
     for node in target_nodes:
