@@ -7,16 +7,15 @@ from pprint import pprint
 from typing import Union
 
 import clang.cindex
+import networkx as nx
 from clang.cindex import CursorKind, Index, Config
-
-from networkx import DiGraph
 
 
 Config.set_library_path('/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib')  # Replace with your Clang library path
 
 
-def get_callgraph():
-    graph = DiGraph()
+def get_callgraph() -> nx.DiGraph:
+    graph = nx.DiGraph()
     for f, ff in CALLGRAPH.items():
         # get the caller
         node_info = NODELIST.get(f, None)
@@ -211,7 +210,7 @@ def analyze_source_files(file: Union[str, Path], cfg, index):
         show_info(tu.cursor, cfg['excluded_paths'], cfg['excluded_prefixes'])
 
 
-def build_ast_graph(path, include_path) -> DiGraph:
+def build_ast_graph(path, include_path) -> nx.DiGraph:
 
     if os.path.isfile(path):
         files = [Path(path)]

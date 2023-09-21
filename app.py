@@ -95,7 +95,7 @@ def store_code(node_data: Optional[Dict], session: Optional[str]):
 
 )
 def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_value, session):
-    graph = graph_backup = None  # type: Optional[nx.Graph]
+    graph = graph_backup = None  # type: Optional[nx.DiGraph]
     elements = []
     if session is None:
         # Generate a unique session identifier (e.g., using UUID)
@@ -116,9 +116,11 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
     if len(context.triggered) and context.triggered[0]:
         if context.triggered[0]['prop_id'] == 'load-project-button.n_clicks':
             graph = build_ast_graph(path, include_path)
+            # noinspection PyTypeChecker
             graph_backup = graph.copy()
 
         if context.triggered[0]['prop_id'] == 'filter.n_submit':
+            # noinspection PyTypeChecker
             graph = graph_backup.copy()
             for n in graph.nodes:  # remove prior filter highlights
                 graph_backup.nodes[n]['data']['filtered'] = "false"
@@ -151,7 +153,7 @@ def render_callgraph(node_data, _n_sub, _n_load, path, include_path, search_valu
     return elements, session
 
 
-def get_cytoscape_data_from_nx(graph: nx.Graph) -> List[Dict]:
+def get_cytoscape_data_from_nx(graph: nx.DiGraph) -> List[Dict]:
     nodes = [dict(data=graph.nodes[k]['data']) for k in graph.nodes if k]
     node_names = [n['data']['id'] for n in nodes]
     edges = []
@@ -179,7 +181,7 @@ def get_cytoscape_data_from_nx(graph: nx.Graph) -> List[Dict]:
     return elements
 
 
-def get_filtered_subgraph(graph: nx.Graph, search_value: str):
+def get_filtered_subgraph(graph: nx.DiGraph, search_value: str):
     target_nodes = set()
     for n in graph.nodes:
         if search_value.lower() in n.lower():
