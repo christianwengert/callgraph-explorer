@@ -24,13 +24,40 @@ external_scripts = [
     {'src': 'static/callbacks.js', 'type': 'module'},
 ]
 external_stylesheets = [
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/regular.min.css'
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css',
+    # 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css'
 ]
 app = dash.Dash(__name__,
                 external_scripts=external_scripts,
                 external_stylesheets=external_stylesheets,
                 index_string=TEMPLATE_STRING)
 app.layout = get_layout()
+
+#
+# @app.callback(
+#     Output('file-list', 'options'),
+#     Input('load-project-button', 'n_clicks'),
+# )
+# def update_file_list(n):
+#     if n is not None:
+#         return [
+#             {'label': 'New York City', 'value': 'New York City'},
+#             {'label': 'New York City 2', 'value': 'New York City 2'},
+#         ]
+#
+#     return no_update
+
+@app.callback(
+    Output('callgraph', 'elements', allow_duplicate=True),
+    Input('reset-button', 'n_clicks'),
+    State('callgraph', 'elements'),
+    prevent_initial_call='initial_duplicate'
+)
+def reset_callgraph(n, z):
+    if n is None:
+        return no_update
+    return z
+
 
 
 @app.callback(

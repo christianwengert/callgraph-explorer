@@ -192,13 +192,13 @@ body { overflow: hidden; /* Hide scrollbars */ }
     left: 4px;
     z-index: 99;
 }
-#main-toolbar > button {
+button {
     background-color: unset;
     color: var(--main-text-color-1);
     border: none;
     font-size: 18px;
 }
-#main-toolbar > button > i {
+button > i {
     cursor: pointer;
 }
 #graph-toolbar {
@@ -209,6 +209,14 @@ body { overflow: hidden; /* Hide scrollbars */ }
     color: var(--main-text-color-1);
     /*justify-content: center;*/
 }
+#filter, #file-list {
+    width: 25%;
+    min-width: 240px;
+}
+#reset-button {
+    margin-left: auto;
+}
+
 #dash {
     /*margin-top: 10px;*/
     width: auto;

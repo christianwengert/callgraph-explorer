@@ -9,7 +9,9 @@ def get_layout() -> html.Div:
     return html.Div(
         [
             html.Div([
-                dcc.Input(id='filter', className='w50', type='text', placeholder='Search', debounce=True),
+                dcc.Input(id='filter', type='text', placeholder='Search', debounce=True),
+                # dcc.Dropdown(id='file-list', multi=True),
+                html.Button(html.I(className="fa fa-refresh"), id='reset-button')
 
             ], id='graph-toolbar'),
             html.Div([
@@ -17,6 +19,7 @@ def get_layout() -> html.Div:
                 dcc.Store(id='session-store', storage_type='memory'),  # Store the session identifier
                 dcc.Loading([
                     cyto.Cytoscape(id='callgraph', elements=[],
+                                   userZoomingEnabled=True,
                                    autoRefreshLayout=True,
                                    layout={
                                        'name': 'dagre',
